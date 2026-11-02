@@ -1,0 +1,38 @@
+{% extends "base.html" %}{% block content %}<div class="topbar"><div><p class="eyebrow">АДМИНИСТРИРОВАНИЕ</p><h1>Настройки</h1><p class="muted">Источники, статусы, пользователи и права доступа</p></div></div><div class="settings-grid"><section class="panel"><h2>Источники</h2><p class="muted">Откуда приходят контакты</p><form method="post" class="inline-form"><input type="hidden" name="action" value="source"><input name="name" required placeholder="Например, Instagram"><button class="btn primary">Добавить</button></form><div class="chips">{% for s in sources %}<span class="chip">{{ s.name }}</span>{% else %}<small class="muted">Источников пока нет</small>{% endfor %}</div></section>
+<section class="panel"><h2>Регионы</h2><p class="muted">Справочник регионов для лидов и рекрутёров</p>
+<form method="post" class="inline-form"><input type="hidden" name="action" value="region">
+<input name="name" required maxlength="100" placeholder="Например, Киевская область">
+<button class="btn primary">Добавить</button></form>
+<div class="chips">{% for r in regions %}<span class="chip">{{ r.name }}</span>{% else %}<small class="muted">Регионов пока нет</small>{% endfor %}</div></section>
+<section class="panel"><h2>Статусы</h2><p class="muted">Этапы работы с контактом</p><form method="post" class="inline-form"><input type="hidden" name="action" value="status"><input name="name" required placeholder="Название статуса"><input class="color-input" type="color" name="color" value="#64748b"><button class="btn primary">Добавить</button></form><div class="status-color-editor">{% for s in statuses %}
+<form method="post" class="status-color-row">
+<input type="hidden" name="action" value="status_color">
+<input type="hidden" name="status_id" value="{{ s.id }}">
+<span class="status" style="--status:{{ s.color }}">{{ s.name }}</span>
+<label for="status-color-{{ s.id }}">Цвет</label>
+<input id="status-color-{{ s.id }}" class="color-input" type="color" name="color" value="{{ s.color }}" required>
+<button type="submit" class="btn secondary">Сохранить</button>
+</form>
+{% else %}<small class="muted">Статусов пока нет</small>{% endfor %}</div></section>
+<section class="panel wide-panel"><h2>Пользователи</h2><p class="muted">Создавайте учётные записи и назначайте роли</p><form method="post" class="user-form"><input type="hidden" name="action" value="user"><input name="username" required placeholder="Логин"><input name="password" type="password" required placeholder="Пароль"><select name="region_id"><option value="">Без региона</option>{% for reg in regions %}<option value="{{ reg.id }}">{{ reg.name }}</option>{% endfor %}</select><select name="role">{% for r in roles %}<option value="{{ r.code }}">{{ r.name }}</option>{% endfor %}</select><button class="btn primary">Создать пользователя</button></form><table><thead><tr><th>АВАТАР</th><th>ЛОГИН</th><th>РОЛЬ</th><th>РЕГИОН</th><th>СОЗДАН</th><th></th></tr></thead><tbody>{% for u in users %}<tr><td><div class="account-avatar-cell"><span class="avatar account-avatar">{% if u.avatar_mime %}<img src="{{ url_for('user_avatar', user_id=u.id) }}" alt="Аватар {{ u.username }}">{% else %}{{ u.username[:1].upper() }}{% endif %}</span>
+<form method="post" enctype="multipart/form-data" action="{{ url_for('user_avatar_update', user_id=u.id) }}" class="account-avatar-form">
+<input type="file" name="avatar" accept="image/png,image/jpeg,image/webp" required aria-label="Фото {{ u.username }}">
+<button type="submit" class="btn secondary">Загрузить</button></form>
+{% if u.avatar_mime %}<form method="post" action="{{ url_for('user_avatar_update', user_id=u.id) }}"><input type="hidden" name="remove_avatar" value="1"><button type="submit" class="btn ghost">Удалить фото</button></form>{% endif %}</div></td><td><form method="post" action="{{ url_for('user_rename', user_id=u.id) }}" class="account-rename-form">
+<input name="username" value="{{ u.username }}" minlength="3" maxlength="50" required aria-label="Логин пользователя {{ u.username }}" autocomplete="off">
+<button class="btn secondary" type="submit">Переименовать</button>
+</form></td><td><form method="post" action="{{ url_for('user_role_update',user_id=u.id) }}" class="role-assign"><select name="role" aria-label="Роль пользователя {{ u.username }}">{% for r in roles %}<option value="{{ r.code }}" {{ 'selected' if r.code==u.role else '' }}>{{ r.name }}</option>{% endfor %}</select><button class="btn secondary" type="submit">Сохранить</button></form></td><td><form method="post" action="{{ url_for('user_region_update', user_id=u.id) }}" class="role-assign">
+<select name="region_id" aria-label="Регион пользователя {{ u.username }}"><option value="">Без региона</option>{% for reg in regions %}<option value="{{ reg.id }}" {{ 'selected' if u.region_id==reg.id else '' }}>{{ reg.name }}</option>{% endfor %}</select>
+<button class="btn secondary" type="submit">Сохранить</button></form></td><td>{{ u.created_at[:10] }}</td><td class="actions">{% if u.id != current_user.id %}<form method="post" action="{{ url_for('user_delete', user_id=u.id) }}" onsubmit="return confirm('Удалить пользователя {{ u.username }}? Его лиды останутся в CRM, но ответственный менеджер будет снят.')"><button class="icon-link danger" title="Удалить пользователя" aria-label="Удалить пользователя">×</button></form>{% else %}<span class="muted">Текущий аккаунт</span>{% endif %}</td></tr>{% endfor %}</tbody></table></section>
+<section class="panel wide-panel"><h2>Роли и права доступа</h2><p class="muted">Создавайте роли и настраивайте доступ. Хед имеет полный доступ; его права защищены.</p>
+<div class="roles-grid">
+{% for r in roles %}
+<form class="role-card" method="post" action="{{ url_for('role_update',code=r.code) }}">
+<h3>{{ r.name }}</h3><label>Название роли</label><input name="name" value="{{ r.name }}" required maxlength="50" {{ 'readonly' if r.code=='admin' else '' }}>
+<div class="permission-list">{% for key,label in permissions.items() %}
+<label class="permission-option"><input type="checkbox" name="permissions" value="{{ key }}" {{ 'checked' if r.code=='admin' or key in (r.permissions|from_json) else '' }} {{ 'disabled' if r.code=='admin' or key=='manage_settings' else '' }}><span>{{ label }}</span></label>
+{% endfor %}</div>
+{% if r.code!='admin' %}<button class="btn primary" type="submit">Сохранить права</button>{% else %}<p class="muted">Системная роль — полный доступ</p>{% endif %}
+</form>{% endfor %}
+<form class="role-card" method="post" action="{{ url_for('role_create') }}"><h3>＋ Создать роль</h3><label>Название новой роли</label><input name="name" required maxlength="50" placeholder="Например, Тимлид"><div class="permission-list">{% for key,label in permissions.items() %}{% if key!='manage_settings' %}<label class="permission-option"><input type="checkbox" name="permissions" value="{{ key }}"><span>{{ label }}</span></label>{% endif %}{% endfor %}</div><button class="btn primary">Создать роль</button></form>
+</div></section></div>{% endblock %}

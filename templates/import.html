@@ -1,0 +1,4 @@
+{% extends "base.html" %}{% block content %}
+<div class="topbar"><div><p class="eyebrow">КЛИЕНТСКАЯ БАЗА</p><h1>Импорт контактов</h1><p class="muted">Загрузите Excel (.xlsx) или CSV до 5 МБ, максимум 2000 строк</p></div><a class="btn ghost" href="{{ url_for('contacts') }}">← Контакты</a></div>
+<div class="form-card"><form method="post" enctype="multipart/form-data"><div class="field"><label>Таблица контактов</label><input type="file" name="file" accept=".xlsx,.csv" required></div><p class="muted" style="margin:18px 0">Первая строка — заголовки: Имя, Телефон, Код страны, Telegram, Email, Регион, Источник, Статус, Ответственный менеджер, Заметки. Имя обязательно. Источники, статусы и менеджеры должны уже существовать в CRM. Для менеджера импортируемые лиды назначаются только ему. При ошибке импорт отменяется целиком. Повторный импорт может создать дубликаты.</p><button class="btn primary" type="submit">Импортировать контакты</button></form></div>
+{% endblock %}
